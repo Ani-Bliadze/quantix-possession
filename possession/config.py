@@ -37,13 +37,18 @@ STATIC_BALL_WINDOW = 25          # frames: ball static for 1 s
 STATIC_GAIN = 0.6                # per frame
 ALIVE_MOVING_GAIN = 0.4          # per frame, ball visible, in bounds, moving, near a player
 ACTIVITY_WINDOW = 50             # frames: rolling mean of median player speed (2 s)
-ACTIVITY_GAIN = 0.5              # scales the GMM posterior log-odds of "low activity"
+ACTIVITY_GAIN = 0.8              # scales the GMM posterior log-odds of "low activity"
 ACTIVITY_CLIP = 2.0
 MISSING_LONG = 75                # frames: ball unseen for 3 s strengthens activity evidence
 MISSING_LONG_BOOST = 1.5
+MISSING_RUN_GAIN = 0.3          # per frame, D evidence once the ball has been unseen for MISSING_LONG
+MISSING_RUN_RAMP = 0.1          # ... plus this per further second unseen
+MISSING_RUN_CAP = 1.0           # ... capped here. In-play ball gaps rarely last > 3 s.
 
 # --- Smart Tagging ------------------------------------------------------------------------------
-SETPIECE_DEAD_GAIN = 0.5         # per frame, D evidence from tag start until detected restart
+SETPIECE_DEAD_GAIN = 1.5         # per frame, D evidence from tag start until detected restart
+SETPIECE_DEAD_LOOKBACK = 250     # frames: a stoppage typically lasts 10+ s before the restart
+SETPIECE_LOOKBACK_GAIN = 0.8    # per frame, D evidence in the lookback window
 SETPIECE_TEAM_GAIN = 0.5         # per frame, team evidence for the restarting team
 SETPIECE_TEAM_FRAMES = 50        # 2 s after the restart
 PHASE_TEAM_GAIN = 0.12           # per frame, team evidence from phase tags
@@ -58,5 +63,5 @@ PSEUDO_TRIM = 25                 # frames trimmed from each end of those spells
 PSEUDO_MAX_SAMPLES = 60000
 
 # --- segmentation (Viterbi) ---------------------------------------------------------------------
-SWITCH_PENALTY = 12.0            # log-odds cost of H<->A: needs ~0.5 s of clear control to flip
-DEAD_PENALTY = 10.0              # cost of entering / leaving D
+SWITCH_PENALTY = 9.0             # log-odds cost of H<->A: needs ~0.5 s of clear control to flip
+DEAD_PENALTY = 6.0               # cost of entering / leaving D

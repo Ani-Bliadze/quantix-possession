@@ -41,6 +41,7 @@ def summarise(labels):
             "possessions": len(poss),
             "mean_possession_s": round(float(np.mean(poss)) / C.FPS, 1) if poss else 0.0,
             "dead_stretches": sum(1 for k, _ in runs if k == "D"),
+            "dead_share": round(float((s == "D").mean()), 3),
         }
     return out
 

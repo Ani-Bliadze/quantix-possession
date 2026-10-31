@@ -11,8 +11,8 @@ Each state change costs a fixed penalty:
 
 | transition | penalty | meaning |
 |---|---|---|
-| H ↔ A | 12 | a change of possession needs about 0.5 s of clear, controlled evidence for the other team |
-| alive ↔ D | 10 | a stoppage has to be supported for a sustained stretch |
+| H ↔ A | 9 | a change of possession needs about 0.4 s of clear, controlled evidence for the other team |
+| alive ↔ D | 6 | a stoppage has to be supported for a sustained stretch |
 
 This is how the "controlled possession" definition becomes an algorithm. A single touch,
 deflection or duel produces a few frames of evidence. That is less than the switch penalty, so it
@@ -65,6 +65,9 @@ flight  = 1 / (1 + (speed / 10 m/s)²)          a ball in flight (a pass or shot
   distribution is split by a 2-component Gaussian mixture on log-speed, fitted without labels, and
   the posterior log-odds of the low-activity component count as D evidence. The evidence is
   boosted when the ball has also been unseen for more than 3 s.
+- A ball unseen for more than 3 s is D evidence in itself, growing with the length of the gap
+  (0.3 per frame, plus 0.1 for every further second, capped at 1.0). In live play, ball gaps
+  rarely last that long. During stoppages the ball is often off-camera or being carried.
 - A moving ball, in bounds and near a player: alive evidence.
 
 **Team shape (self-supervised).** These are home-minus-away differences of five descriptors,
@@ -82,7 +85,8 @@ half.
 
 **Smart Tagging.**
 
-- *Set pieces.* D evidence runs from the tag start until the detected restart, which is the first
+- *Set pieces.* D evidence runs from 10 s before the tag (a weaker prior: stoppages usually last
+  that long) and more strongly from the tag start until the detected restart, which is the first
   frame where the ball accelerates from rest inside the tag window. For a *Kick Off (Start)*, the
   whole stretch from the start of the graded half to the restart is D, which handles the 2nd-half
   pre-kickoff frames. After the restart, team evidence goes to the restarting team for 2 s when
@@ -121,13 +125,23 @@ listed with their rationale in `possession/config.py`. The only quantities fitte
 
 - **Synthetic match** (`tools/make_synthetic.py`). This is a simulator in the bundle format with
   ~40% ball dropout, identity switches, set pieces and noisy tags, scored with the official
-  scorer. On it, the pipeline gets spellF1 0.69 against 0.42 for `baseline_smooth50`. This
+  scorer. On it, the pipeline gets spellF1 0.63 against 0.42 for `baseline_smooth50`. This
   validates correctness, not real-world accuracy.
 - **Format.** Output passes `validate_submission.py`.
 - **Determinism.** Output is byte-identical across runs and across numpy 1.26 and 2.x.
 - **Public 5 minutes.** Used only to confirm alignment and label meaning.
 
-## 7. Limitations and next steps
+## 7. Calibration history
+
+Version 1 used larger penalties (12 / 10) and no missing-ball or set-piece lookback cues. On the
+real match it labelled only about 11% of graded frames as dead ball. Effective playing time in
+professional football is roughly 55 to 60% of the clock, so that was far too low. Missing
+stoppages merge neighbouring possessions, which shows up as too few, too long possessions (about
+100 per half, averaging 25 to 30 s). Version 2 strengthens the dead-ball cues and lowers the
+penalties. The change was decided from this football prior and the run's own aggregate counts,
+not from the public ground truth.
+
+## 8. Limitations and next steps
 
 - Parameters are priors, not learned. With labelled data from *other* games, the evidence weights
   and penalties could be fitted, for example as a CRF.
@@ -139,7 +153,7 @@ listed with their rationale in `possession/config.py`. The only quantities fitte
   ATD to fill ball gaps after temporal alignment, and ball-height cues from the video for aerial
   play.
 
-## 8. Reproduction
+## 9. Reproduction
 
 ```bash
 pip install -r requirements.txt

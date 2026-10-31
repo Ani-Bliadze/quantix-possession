@@ -67,6 +67,7 @@ def evidence(events, f, names):
                 half_start = C.GRADED_HALVES[h][0]
                 dead[half_start:r] += 5.0
             dead[a:r] += C.SETPIECE_DEAD_GAIN
+            dead[max(0, a - C.SETPIECE_DEAD_LOOKBACK):a] += C.SETPIECE_LOOKBACK_GAIN
             side = team_side(ev["tags"].get("team"), names)
             if side is not None:
                 s = 1.0 if side == 0 else -1.0

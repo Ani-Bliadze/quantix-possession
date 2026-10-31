@@ -176,7 +176,12 @@ def compute(atd, team_of_slot):
     static = trailing_all(seen_raw & (np.nan_to_num(bspeed, nan=99.0) < C.STATIC_BALL_SPEED),
                           C.STATIC_BALL_WINDOW)
     moving = inb & (np.nan_to_num(bspeed, nan=0.0) > 1.5) & (dmin < 3.0)
+    over = np.maximum(missing_run - C.MISSING_LONG, 0) / float(C.FPS)
+    dead_missing = np.where(missing_run >= C.MISSING_LONG,
+                            np.minimum(C.MISSING_RUN_GAIN + C.MISSING_RUN_RAMP * over,
+                                       C.MISSING_RUN_CAP), 0.0)
     dead = (dead_activity
+            + dead_missing
             + C.OUT_GAIN * out
             + C.STATIC_GAIN * static
             - C.ALIVE_MOVING_GAIN * moving)
