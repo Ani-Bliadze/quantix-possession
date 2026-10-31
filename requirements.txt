@@ -1,0 +1,4 @@
+# The pipeline needs numpy only. Output verified byte-identical under numpy 1.26.4 and 2.x.
+numpy==1.26.4
+# Only needed to run the official scorer from the challenge repository:
+pandas==2.2.3

@@ -1,0 +1,9 @@
+# Match data is licensed for the competition only: never commit it.
+data/
+*.mp4
+*_atd.txt
+*_atd.xml
+*_homography.csv
+*_smart_tagging.xml
+__pycache__/
+*.pyc
