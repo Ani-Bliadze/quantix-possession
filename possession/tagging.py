@@ -49,6 +49,9 @@ def evidence(events, f, names):
     team = np.zeros(n)
     halves = f["halves"]
     info = {"n_events": len(events), "set_pieces": 0, "phase_polarity": {}}
+    pseudo_dead = np.zeros(n, dtype=bool)      # algorithmic D pseudo-labels for model.py
+    pseudo_skip = np.zeros(n, dtype=bool)      # frames near set pieces: not alive examples
+    f["pseudo_dead"], f["pseudo_skip"] = pseudo_dead, pseudo_skip
     if not events:
         return dead, team, info
 
@@ -66,7 +69,10 @@ def evidence(events, f, names):
                 h = halves[r]
                 half_start = C.GRADED_HALVES[h][0]
                 dead[half_start:r] += 5.0
+                pseudo_dead[half_start:r] = True
             dead[a:r] += C.SETPIECE_DEAD_GAIN
+            pseudo_dead[a:r] = True
+            pseudo_skip[max(0, a - C.SETPIECE_DEAD_LOOKBACK):min(n, b + C.FPS)] = True
             dead[max(0, a - C.SETPIECE_DEAD_LOOKBACK):a] += C.SETPIECE_LOOKBACK_GAIN
             side = team_side(ev["tags"].get("team"), names)
             if side is not None:

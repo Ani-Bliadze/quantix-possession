@@ -117,15 +117,46 @@ def shape_logodds(f, states):
     return out, info
 
 
+def dead_logodds(f):
+    """Self-supervised dead-ball model on collective player motion.
+
+    Positives (dead): frames between a tagged set piece's start and its detected restart, the
+    pre-kickoff stretch of each half, and frames with the ball tracked out of the pitch.
+    Negatives (alive): ball seen, in bounds, moving and within 1.5 m of a player, away from any
+    set piece. All pseudo-labels come from algorithms; no human label is involved."""
+    X = f["motion"]
+    ok = ~np.isnan(X).any(axis=1) & f["graded"]
+    pos = f.get("pseudo_dead", np.zeros(f["n"], bool)) | f["out"]
+    alive = (f["seen_raw"] & ~f["out"] & (np.nan_to_num(f["bspeed"], nan=0.0) > 2.0)
+             & (f["dmin"] < 1.5) & ~f.get("pseudo_skip", np.zeros(f["n"], bool)))
+    pi, ni = np.flatnonzero(pos & ok), np.flatnonzero(alive & ok & ~pos)
+    info = {"n_dead_pseudo": int(len(pi)), "n_alive_pseudo": int(len(ni))}
+    out = np.zeros(f["n"])
+    if len(pi) < 200 or len(ni) < 200:
+        return out, info
+    rng = np.random.RandomState(1)
+    k = min(len(pi), len(ni), C.PSEUDO_MAX_SAMPLES // 2)
+    sel = np.concatenate([rng.choice(pi, k, replace=False), rng.choice(ni, k, replace=False)])
+    y = np.concatenate([np.ones(k), np.zeros(k)])
+    w, b, mu, sd = fit_logistic(X[sel], y)
+    good = ~np.isnan(X).any(axis=1)
+    z = np.zeros(f["n"])
+    z[good] = ((X[good] - mu) / sd) @ w + b
+    info["train_agreement"] = round(float(((z[sel] > 0) == (y == 1)).mean()), 3)
+    info["dead_share_if_thresholded"] = round(float((z[f["graded"]] > 0).mean()), 3)
+    return np.clip(z, -C.DEAD_MODEL_CLIP, C.DEAD_MODEL_CLIP), info
+
+
 def run(f, tag_dead, tag_team):
     team1 = f["team_ball"] + tag_team
-    dead = f["dead"] + tag_dead
+    dz, dinfo = dead_logodds(f)
+    dead = f["dead"] + tag_dead + C.DEAD_MODEL_GAIN * dz
     s1 = decode(team1, dead, f)
     shape, sinfo = shape_logodds(f, s1)
     gain = np.where(f["seen"], C.SHAPE_GAIN_VISIBLE, C.SHAPE_GAIN_MISSING)
     team2 = team1 + gain * shape
     s2 = decode(team2, dead, f)
-    return s2, {"pass1": s1, "shape": sinfo}
+    return s2, {"pass1": s1, "shape": sinfo, "dead_model": dinfo}
 
 
 def to_labels(states):

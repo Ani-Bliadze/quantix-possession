@@ -70,6 +70,18 @@ flight  = 1 / (1 + (speed / 10 m/s)²)          a ball in flight (a pass or shot
   rarely last that long. During stoppages the ball is often off-camera or being carried.
 - A moving ball, in bounds and near a player: alive evidence.
 
+**Dead-ball model (self-supervised).** A logistic regression on collective player motion. It
+uses six descriptors smoothed over 2 s: log median speed, log 80th-percentile speed, the share of
+players walking (< 1 m/s), the share running (> 4 m/s), and the length and width spread of all
+players. It is trained on algorithmic pseudo-labels:
+
+- *dead:* set-piece tag start to detected restart, the pre-kickoff stretch, and ball out of the
+  pitch
+- *alive:* a moving ball within 1.5 m of a player, away from set pieces
+
+Ball features are excluded on purpose, because the alive examples all have a visible ball. Its
+clipped log-odds × 0.6 is added to the dead-ball evidence.
+
 **Team shape (self-supervised).** These are home-minus-away differences of five descriptors,
 smoothed over 1 s, with x measured along each team's attacking direction:
 
@@ -140,6 +152,9 @@ stoppages merge neighbouring possessions, which shows up as too few, too long po
 100 per half, averaging 25 to 30 s). Version 2 strengthens the dead-ball cues and lowers the
 penalties. The change was decided from this football prior and the run's own aggregate counts,
 not from the public ground truth.
+
+Version 3 adds the self-supervised dead-ball model above, because v2 still labelled only 16 to
+22% of graded frames dead.
 
 ## 8. Limitations and next steps
 

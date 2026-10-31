@@ -37,7 +37,7 @@ STATIC_BALL_WINDOW = 25          # frames: ball static for 1 s
 STATIC_GAIN = 0.6                # per frame
 ALIVE_MOVING_GAIN = 0.4          # per frame, ball visible, in bounds, moving, near a player
 ACTIVITY_WINDOW = 50             # frames: rolling mean of median player speed (2 s)
-ACTIVITY_GAIN = 0.8              # scales the GMM posterior log-odds of "low activity"
+ACTIVITY_GAIN = 0.4              # scales the GMM posterior log-odds of "low activity"
 ACTIVITY_CLIP = 2.0
 MISSING_LONG = 75                # frames: ball unseen for 3 s strengthens activity evidence
 MISSING_LONG_BOOST = 1.5
@@ -61,6 +61,10 @@ SHAPE_CLIP = 3.0                 # clip shape log-odds before the gain
 PSEUDO_MIN_SPELL = 125           # frames: only possessions >= 5 s from pass 1 feed pseudo-labels
 PSEUDO_TRIM = 25                 # frames trimmed from each end of those spells
 PSEUDO_MAX_SAMPLES = 60000
+
+# --- self-supervised dead-ball model (model.dead_logodds) ----------------------------------------
+DEAD_MODEL_GAIN = 0.6            # per frame, multiplier on its log-odds
+DEAD_MODEL_CLIP = 3.0
 
 # --- segmentation (Viterbi) ---------------------------------------------------------------------
 SWITCH_PENALTY = 9.0             # log-odds cost of H<->A: needs ~0.5 s of clear control to flip

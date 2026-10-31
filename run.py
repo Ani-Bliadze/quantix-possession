@@ -81,7 +81,7 @@ def main():
     data_io.write_submission(args.out, labels)
     print("decoded   [{:.0f}s]".format(time.time() - t0))
 
-    report = {"features": f["info"], "tagging": tinfo, "shape_model": minfo["shape"],
+    report = {"features": f["info"], "tagging": tinfo, "shape_model": minfo["shape"], "dead_model": minfo["dead_model"],
               "summary": summarise(labels)}
     print(json.dumps(report, indent=1))
     print("wrote", args.out)

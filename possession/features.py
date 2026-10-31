@@ -205,12 +205,13 @@ def compute(atd, team_of_slot):
     info["home_attacks_plus_x"] = dirs
 
     shape = shape_features(px, py, home, away, home_dir)
+    motion = motion_features(px, py, sp)
 
     return {
         "n": n, "seen": seen, "seen_raw": seen_raw, "bx": bx, "by": by, "bspeed": bspeed,
         "d_home": d_home, "d_away": d_away, "control": control,
         "team_ball": team_ball, "dead": dead, "out": out, "static": static,
-        "activity": act, "shape": shape, "graded": graded, "halves": halves,
+        "activity": act, "shape": shape, "motion": motion, "dmin": dmin, "graded": graded, "halves": halves,
         "home_dir": home_dir, "info": info,
     }
 
@@ -248,3 +249,21 @@ def shape_features(px, py, home, away, home_dir):
         feats.append(rolling_nanmean(a - b, C.FPS))
     X = np.stack(feats, axis=1)
     return X
+
+
+def motion_features(px, py, sp):
+    """Collective player-motion descriptors, smoothed over 2 s. Used by the self-supervised
+    dead-ball model. Deliberately no ball features: the alive pseudo-labels are taken where the
+    ball is seen, so ball visibility would be a trivially leaky feature."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        med = np.nanmedian(sp, axis=1)
+        p80 = np.nanpercentile(sp, 80, axis=1)
+        cnt = np.sum(~np.isnan(sp), axis=1).astype(float)
+        cnt[cnt == 0] = np.nan
+        walk = np.sum(sp < 1.0, axis=1) / cnt
+        run_ = np.sum(sp > 4.0, axis=1) / cnt
+        sx = np.nanstd(px, axis=1)
+        sy = np.nanstd(py, axis=1)
+    feats = [np.log(np.maximum(med, 0.05)), np.log(np.maximum(p80, 0.05)), walk, run_, sx, sy]
+    return np.stack([rolling_nanmean(v, C.ACTIVITY_WINDOW) for v in feats], axis=1)
